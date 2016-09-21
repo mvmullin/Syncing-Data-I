@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+    <script type="text/babel" >
+        "use strict";
+      
+      let socket;
+      var canvas = document.getElementById('myCanvas');
+      var ctx = canvas.getContext('2d');
+      let sendBufferCanvas;
+      let sendBufferCtx;
+      
+      const setup = () => {
+        sendBufferCanvas = document.createElement("canvas");
+        sendBufferCanvas.height = 400;
+        sendBufferCanvas.width = 600;
+        sendBufferCtx = sendBufferCanvas.getContext("2d");
+        
+        ctx.fillRect(100, 100, 50, 50);
+        sendBufferCtx.fillStyle = "red";
+        sendBufferCtx.fillRect(0, 0, 50, 50);
+        
+        const data = {
+          x: 300,
+          y: 300,
+          height: 400,
+          width: 600,
+          imgData: sendBufferCanvas.toDataURL()
+        };
+        
+        socket.emit("draw", data);
+      }
+      
+      //add parameters from server to draw stack
+      const handleDraw = (data) => {
+        let image = new Image();
+        
+        image.onload = () => {
+          ctx.save();
+          ctx.globalCompositeOperation = "source-over";
+          ctx.drawImage(image, data.x, data.y, data.width, data.height);
+          ctx.restore();
+        };
+        
+        image.src = data.imgData;
+      }
+    
+      const init = () => {
+        socket = io.connect();
+        
+        socket.on('connect', () => {
+          setup();
+        });
+        
+        socket.on('drawn', handleDraw);
+      };
+    
+    window.onload = init;
+    
+    </script>
+</head>
+<body>
+  <canvas id="myCanvas" width="600" height="400"></canvas>
+</body>
+</html>
